@@ -1,0 +1,59 @@
+# Apache Airflow
+apache-airflow==2.8.1
+apache-airflow-providers-common-sql==1.10.0
+apache-airflow-providers-snowflake==5.1.0
+
+# Data Processing
+pandas==2.1.4
+numpy==1.26.3
+scikit-learn==1.4.0
+
+# Geospatial Processing
+geopy==2.4.1
+h3==3.7.7
+
+# Azure Authentication
+azure-identity==1.16.0
+
+# Database Connections
+sqlalchemy==1.4.52
+psycopg2-binary==2.9.9
+snowflake-connector-python==3.7.0
+snowflake-sqlalchemy==1.5.1
+
+# Machine Learning
+xgboost==2.0.3
+lightgbm==4.3.0
+catboost==1.2.2
+
+# Model Persistence
+joblib==1.3.2
+pickle5==0.0.11
+
+# Jupyter for Notebooks
+jupyter==1.0.0
+ipykernel==6.29.0
+notebook==7.0.7
+
+# Visualization
+matplotlib==3.8.2
+seaborn==0.13.1
+plotly==5.18.0
+
+# Utilities
+python-dotenv==1.0.0
+pyyaml==6.0.1
+click==8.1.7
+
+# HTML/Text Processing
+beautifulsoup4==4.12.3
+lxml==5.1.0
+
+# Testing
+pytest==7.4.4
+pytest-cov==4.1.0
+
+# Code Quality
+black==24.1.1
+flake8==7.0.0
+pylint==3.0.3
