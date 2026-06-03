@@ -154,6 +154,7 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
     -- Getting only appointments that are in the US
     inner join enterprise_reference_domain.broker.ref_location location on location.location_party_code = appt.warehousecode and location.country = 'United States'
     where /*to_date(lb.booked_datetime) <= to_date(appt.apptopendatetime_cst) and*/ appt.activity in ('APPOINTMENTS SET','RESCHEDULES SET','APPOINTMENT INFO UPDATE','APPOINTMENT REMOVAL') and stop_type = 'P'
+        and apptopendatetime_cst is not null
     qualify ROW_NUMBER() OVER (
             PARTITION BY appt.loadnum, appt.stop_num, appt.stop_type
             ORDER BY appt.scheddatetime DESC
@@ -195,6 +196,7 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
     -- Getting only appointments that are in the US
     inner join enterprise_reference_domain.broker.ref_location location on location.location_party_code = appt.warehousecode and location.country = 'United States'
     where /*to_date(lb.booked_datetime) <= to_date(appt.apptopendatetime_cst) and*/ appt.activity in ('APPOINTMENTS SET','RESCHEDULES SET','APPOINTMENT INFO UPDATE','APPOINTMENT REMOVAL') and stop_type = 'P'
+        and apptclosedatetime_cst is not null
     qualify ROW_NUMBER() OVER (
             PARTITION BY appt.loadnum, appt.stop_num, appt.stop_type
             ORDER BY appt.scheddatetime DESC
@@ -236,6 +238,7 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
     -- Getting only appointments that are in the US
     inner join enterprise_reference_domain.broker.ref_location location on location.location_party_code = appt.warehousecode and location.country = 'United States'
     where /*to_date(lb.booked_datetime) <= to_date(appt.apptopendatetime_cst) and*/ appt.activity in ('APPOINTMENTS SET','RESCHEDULES SET','APPOINTMENT INFO UPDATE','APPOINTMENT REMOVAL') and stop_type = 'D'
+        and apptopendatetime_cst is not null
     qualify ROW_NUMBER() OVER (
             PARTITION BY appt.loadnum, appt.stop_num, appt.stop_type
             ORDER BY appt.scheddatetime DESC
@@ -277,6 +280,7 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
     -- Getting only appointments that are in the US
     inner join enterprise_reference_domain.broker.ref_location location on location.location_party_code = appt.warehousecode and location.country = 'United States'
     where /*to_date(lb.booked_datetime) <= to_date(appt.apptopendatetime_cst) and*/ appt.activity in ('APPOINTMENTS SET','RESCHEDULES SET','APPOINTMENT INFO UPDATE','APPOINTMENT REMOVAL') and stop_type = 'D'
+        and apptclosedatetime_cst is not null
     qualify ROW_NUMBER() OVER (
             PARTITION BY appt.loadnum, appt.stop_num, appt.stop_type
             ORDER BY appt.scheddatetime DESC
