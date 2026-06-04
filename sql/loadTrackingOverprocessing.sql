@@ -17,7 +17,7 @@ select
     
 from nast_carrier_domain.broker.load_books lb
 inner join nast_customer_domain.broker.metric_customer_order_load_books s on lb.load_num = s.load_num and lb.seq_num = s.book_seq_num
-where to_date(booked_datetime) >= TO_DATE({startdate})
+where to_date(booked_datetime) >= TO_DATE({startdate}) and to_date(booked_datetime) <= TO_DATE({enddate})
 group by 1
 )
 
@@ -36,7 +36,7 @@ where lb.bounced = False
     -- Removes intermodal carriers
     and lb.carrier_branch_code != '0273'
     and droptrailerflag = False
-    and activity_date >= {startdate}
+    and activity_date >= {startdate} and activity_date <= {enddate}
 group by 1
 having num_seq_num = 1 and num_carriers = 1
 )
@@ -69,6 +69,7 @@ select
     -- Removing Intermodal carriers
     and lb.carrier_branch_code != '0273'
     and to_date(version_start_datetime_tz) >= TO_DATE({startdate})
+    and to_date(version_start_datetime_tz) <= TO_DATE({enddate})
 )
 
 -- select * from tracking_method limit 50
@@ -98,7 +99,7 @@ inner join enterprise_reference_domain.broker.ref_data b on a.check_call_type = 
 left join enterprise_reference_domain.broker.ref_worker c on c.seven_letter = a.update_user
 left join tracking_method tm on tm.load_num = a.load_num and convert_timezone('America/Chicago',tm.version_start_datetime_tz) <= convert_timezone('America/Chicago',a.entered_datetime_tz)
 inner join loads_filter lf on lf.load_num = a.load_num
-where /*check_call_type = 'CC' and*/ to_date(entered_datetime_tz) >= TO_DATE({startdate})
+where /*check_call_type = 'CC' and*/ to_date(entered_datetime_tz) >= TO_DATE({startdate}) and to_date(entered_datetime_tz) <= TO_DATE({enddate})
 qualify row_number() over (partition by a.load_num, a.check_call_type, b.description, entered_datetime_cst order by tm.version_start_datetime_tz desc) = 1
 )
 
