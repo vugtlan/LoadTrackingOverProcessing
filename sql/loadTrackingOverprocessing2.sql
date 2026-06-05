@@ -17,18 +17,18 @@ select
     
 from nast_carrier_domain.broker.load_books lb
 inner join nast_customer_domain.broker.metric_customer_order_load_books s on lb.load_num = s.load_num and lb.seq_num = s.book_seq_num
-where to_date(booked_datetime) >= '2026-05-15' --{startdate}
+where to_date(booked_datetime) >= TO_DATE({startdate}) and to_date(booked_datetime) <= TO_DATE({enddate})
 group by 1
 )
 
 --This filters to truckload, execution, non intermodal, non consolidator, non drop trailer loads that just have one carrier for the entire life of the load
 ,loads_filter as
 (
-select lb.load_num, count(distinct seq_num) num_seq_num, count(distinct lb.carrier_code) num_carriers
+select lb.load_num, count(distinct lb.seq_num) num_seq_num, count(distinct lb.carrier_code) num_carriers
 from nast_carrier_domain.broker.load_books lb
 inner join cdc_express.broker.dbo_loads l on l.loadnum = lb.load_num and lower(l.condition) != 'x'
 inner join enterprise_reference_domain.broker.ref_carrier_flattened c on c.carrier_party_code = lb.carrier_code
-inner join nast_carrier_domain.broker.loads cl on cl.load_num = lb.load_num and TRY_TO_NUMBER(cl.is_cross_border_related::string) = 0 -- Removing cross boarder loads
+inner join nast_carrier_domain.broker.loads cl on cl.load_num = lb.load_num and cl.is_cross_border_related = 0 -- Removing cross boarder loads
 where lb.bounced = False 
     and lb.nast_truckload_flag = True 
     and lb.is_execution_load_book = True
@@ -36,7 +36,7 @@ where lb.bounced = False
     -- Removes intermodal carriers
     and lb.carrier_branch_code != '0273'
     and droptrailerflag = False
-    and to_date(lb.entered_datetime) >= '2026-05-15' --{startdate}
+    and activity_date >= {startdate} and activity_date <= {enddate}
 group by 1
 having num_seq_num = 1 and num_carriers = 1
 )
@@ -62,9 +62,9 @@ select
     and c.is_known_consolidator = FALSE
     -- Removing Intermodal carriers
     and lb.carrier_branch_code != '0273'
-    and to_date(version_start_datetime_tz) >= '2026-05-15' -- {startdate}
+    and to_date(version_start_datetime_tz) >= TO_DATE({startdate})
+    and to_date(version_start_datetime_tz) <= TO_DATE({enddate})
 )
-
 
 ,check_calls as
 (
@@ -86,12 +86,13 @@ select
     tm.tracking_identifier_clean,
     tm.tracking_identifier_type,
     tm.tracking_method_type,
+    null appt_type
 from nast_carrier_domain.broker.load_tracking a
 inner join enterprise_reference_domain.broker.ref_data b on a.check_call_type = b.code and b.type = 'CHECKCALL'
 left join enterprise_reference_domain.broker.ref_worker c on c.seven_letter = a.update_user
 left join tracking_method tm on tm.load_num = a.load_num and convert_timezone('America/Chicago',tm.version_start_datetime_tz) <= convert_timezone('America/Chicago',a.entered_datetime_tz)
 inner join loads_filter lf on lf.load_num = a.load_num
-where to_date(entered_datetime_tz) >= '2026-05-15' -- {startdate}
+where to_date(entered_datetime_tz) >= TO_DATE({startdate}) and to_date(entered_datetime_tz) <= TO_DATE({enddate})
 qualify row_number() over (partition by a.load_num, a.check_call_type, b.description, entered_datetime_cst order by tm.version_start_datetime_tz desc) = 1
 )
 
@@ -106,8 +107,8 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
         location.city city,
         location.state state,
         location.country country,
-        location.latitude latitude,
-        location.longitude longitude,
+        nullif(location.latitude, '')::FLOAT latitude,
+        nullif(location.longitude, '')::FLOAT longitude,
         null automated,
         null is_digital,
         null is_predicted,
@@ -115,7 +116,8 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
         null human_entered_checkcall_flag,
         null tracking_identifier_clean,
         null tracking_identifier_type,
-        null tracking_method_type
+        null tracking_method_type,
+        appt.activity appt_type
     from nast_operations_domain.broker.appointment_universe appt
     inner join nast_carrier_domain.broker.load_books lb on lb.load_num = appt.loadnum
     inner join loads_filter lf on lf.load_num = appt.loadnum
@@ -137,8 +139,8 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
         location.city city,
         location.state state,
         location.country country,
-        location.latitude latitude,
-        location.longitude longitude,
+        nullif(location.latitude,'')::FLOAT latitude,
+        nullif(location.longitude,'')::FLOAT longitude,
         null automated,
         null is_digital,
         null is_predicted,
@@ -146,7 +148,8 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
         null human_entered_checkcall_flag,
         null tracking_identifier_clean,
         null tracking_identifier_type,
-        null tracking_method_type
+        null tracking_method_type,
+        appt.activity appt_type
     from nast_operations_domain.broker.appointment_universe appt
     inner join nast_carrier_domain.broker.load_books lb on lb.load_num = appt.loadnum
     inner join loads_filter lf on lf.load_num = appt.loadnum
@@ -169,8 +172,8 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
         location.city city,
         location.state state,
         location.country country,
-        location.latitude latitude,
-        location.longitude longitude,
+        nullif(location.latitude,'')::FLOAT latitude,
+        nullif(location.longitude,'')::FLOAT longitude,
         null automated,
         null is_digital,
         null is_predicted,
@@ -178,7 +181,8 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
         null human_entered_checkcall_flag,
         null tracking_identifier_clean,
         null tracking_identifier_type,
-        null tracking_method_type
+        null tracking_method_type,
+        appt.activity appt_type
     from nast_operations_domain.broker.appointment_universe appt
     inner join nast_carrier_domain.broker.load_books lb on lb.load_num = appt.loadnum
     inner join loads_filter lf on lf.load_num = appt.loadnum
@@ -201,8 +205,8 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
         location.city city,
         location.state state,
         location.country country,
-        location.latitude latitude,
-        location.longitude longitude,
+        nullif(location.latitude,'')::FLOAT latitude,
+        nullif(location.longitude,'')::FLOAT longitude,
         null automated,
         null is_digital,
         null is_predicted,
@@ -210,10 +214,10 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
         null human_entered_checkcall_flag,
         null tracking_identifier_clean,
         null tracking_identifier_type,
-        null tracking_method_type
+        null tracking_method_type,
+        appt.activity appt_type
     from nast_operations_domain.broker.appointment_universe appt
     inner join nast_carrier_domain.broker.load_books lb on lb.load_num = appt.loadnum
-    -- inner join first_booked_date fbd on fbd.load_num = lb.load_num and fbd.first_seq_num = lb.seq_num
     inner join loads_filter lf on lf.load_num = appt.loadnum
     -- Getting only appointments that are in the US
     inner join enterprise_reference_domain.broker.ref_location location on location.location_party_code = appt.warehousecode and location.country = 'United States' 
@@ -223,7 +227,6 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
             ORDER BY appt.scheddatetime DESC
         ) = 1
 )
-
 
 ,data_final as
 (
@@ -251,6 +254,7 @@ select *
 from latest_sched_dropoff_close
 )
 
+-- Only including loads where either the pick up or drop off was in the US
 ,us_loads as
 (
 select distinct load_num
@@ -258,10 +262,44 @@ from data_final
 where country = 'United States'
 )
 
-select a.*, cl.is_cross_border_related, b.TRACKING_SLA_PRE_PICK, b.TRACKING_SLA_IN_TRANSIT, b.TRACKING_SLA_TOTAL, b.TRACKING_SLA_TOTAL_SCORE_ACTUAL, b.TRACKING_SLA_TOTAL_SCORE_POSSIBLE 
+,pick_opens as 
+(
+select
+    load_num,
+    stop_type,
+    convert_timezone('America/Chicago',apptopendatetime_cst) apptopendatetime_cst,
+    scheddatetime
+from nast_operations_domain.broker.appointment_universe
+where stop_type = 'P' and activity in ('APPOINTMENTS SET','RESCHEDULES SET','APPOINTMENT INFO UPDATE','APPOINTMENT REMOVAL')
+order by scheddatetime asc
+)
+
+,first_p_open as
+(
+select load_num, min(entered_datetime_cst) first_p_open_date
+from data_final
+where check_call_type = 'P-Open'
+group by 1
+)
+
+,final as 
+(
+select a.*,
+case when fpo.load_num is not null then po.scheddatetime else null end og_scheddatetime,
+case when fpo.load_num is not null then po.apptopendatetime_cst else null end og_apptopen, cl.is_cross_border_related, b.TRACKING_SLA_PRE_PICK, 
+b.TRACKING_SLA_IN_TRANSIT, b.TRACKING_SLA_TOTAL, b.TRACKING_SLA_TOTAL_SCORE_ACTUAL, b.TRACKING_SLA_TOTAL_SCORE_POSSIBLE
 from data_final a
 left join sla_performance b on a.load_num = b.load_num
 left join nast_carrier_domain.broker.loads cl on cl.load_num = a.load_num
 -- Filtering to just US loads
 inner join us_loads on us_loads.load_num = a.load_num
--- order by a.entered_datetime_cst asc
+left join pick_opens po on po.load_num = a.load_num and convert_timezone('America/Chicago',po.scheddatetime) <= entered_datetime_cst -- and po.apptopendatetime_cst >= entered_datetime_cst
+left join first_p_open fpo on fpo.load_num = a.load_num and a.entered_datetime_cst <= fpo.first_p_open_date
+qualify row_number() over (
+    partition by a.load_num, a.check_call_type, a.description, a.entered_datetime_cst, a.update_user 
+    order by og_scheddatetime DESC
+    ) = 1
+order by a.entered_datetime_cst asc
+)
+
+select * from final
