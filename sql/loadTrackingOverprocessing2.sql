@@ -70,6 +70,9 @@ select
 (
 select 
     a.load_num,
+    cust.customercode,
+    cust.ear2id,
+    cust.ear2name,
     a.check_call_type,
     b.description,
     convert_timezone('America/Chicago',a.entered_datetime_tz)::string entered_datetime_cst,
@@ -82,6 +85,9 @@ select
     a.is_digital,
     a.is_predicted,
     a.update_user,
+    c.job_family_description,
+    d.rollupbranchname,
+    d.branchsubregion2,
     case when c.seven_letter is not null then 1 else 0 end human_entered_checkcall_flag,
     tm.tracking_identifier_clean,
     tm.tracking_identifier_type,
@@ -89,9 +95,13 @@ select
     null appt_type
 from nast_carrier_domain.broker.load_tracking a
 inner join enterprise_reference_domain.broker.ref_data b on a.check_call_type = b.code and b.type = 'CHECKCALL'
-left join enterprise_reference_domain.broker.ref_worker c on c.seven_letter = a.update_user
+left join enterprise_reference_domain.broker.ref_worker_flattened c on c.seven_letter = a.update_user
+left join nast_truckload_domain.broker.dim_branch d on d.branchcode = c.branch_party_code
 left join tracking_method tm on tm.load_num = a.load_num and convert_timezone('America/Chicago',tm.version_start_datetime_tz) <= convert_timezone('America/Chicago',a.entered_datetime_tz)
 inner join loads_filter lf on lf.load_num = a.load_num
+left join cdc_orion.broker.ep_activity act on act.loadnumber = a.load_num
+left join nast_operations_domain.broker.order_characteristics oc on oc.ordernum = act.ordernumber
+left join nast_truckload_domain.broker.dim_customer cust on cust.customercode = oc.customer_code
 where to_date(entered_datetime_tz) >= TO_DATE({startdate}) and to_date(entered_datetime_tz) <= TO_DATE({enddate})
 qualify row_number() over (partition by a.load_num, a.check_call_type, b.description, entered_datetime_cst order by tm.version_start_datetime_tz desc) = 1
 )
@@ -101,6 +111,9 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
 (
     select
         loadnum load_num,
+        null customercode,
+        null ear2id,
+        null ear2name,
         concat(stop_type,'-Open') check_call_type,
         warehousecode description,
         convert_timezone('America/Chicago',apptopendatetime_cst) entered_datetime_cst,
@@ -113,6 +126,9 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
         null is_digital,
         null is_predicted,
         null update_user,
+        null job_family_description,
+        null rollupbranchname,
+        null branchsubregion2,
         null human_entered_checkcall_flag,
         null tracking_identifier_clean,
         null tracking_identifier_type,
@@ -133,6 +149,9 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
 (
     select
         loadnum load_num,
+        null customercode,
+        null ear2id,
+        null ear2name,
         concat(stop_type,'-Close') check_call_type,
         warehousecode description,
         convert_timezone('America/Chicago',apptclosedatetime_cst) entered_datetime_cst,
@@ -145,6 +164,9 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
         null is_digital,
         null is_predicted,
         null update_user,
+        null job_family_description,
+        null rollupbranchname,
+        null branchsubregion2,
         null human_entered_checkcall_flag,
         null tracking_identifier_clean,
         null tracking_identifier_type,
@@ -166,6 +188,9 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
 (
     select
         loadnum load_num,
+        null customercode,
+        null ear2id,
+        null ear2name,
         concat(stop_type,'-Open') check_call_type,
         warehousecode description,
         convert_timezone('America/Chicago',apptopendatetime_cst) entered_datetime_cst,
@@ -178,6 +203,9 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
         null is_digital,
         null is_predicted,
         null update_user,
+        null job_family_description,
+        null rollupbranchname,
+        null branchsubregion2,
         null human_entered_checkcall_flag,
         null tracking_identifier_clean,
         null tracking_identifier_type,
@@ -199,6 +227,9 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
 (
     select
         loadnum load_num,
+        null customercode,
+        null ear2id,
+        null ear2name,
         concat(stop_type,'-Close') check_call_type,
         warehousecode description,
         convert_timezone('America/Chicago',apptclosedatetime_cst) entered_datetime_cst,
@@ -211,6 +242,9 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
         null is_digital,
         null is_predicted,
         null update_user,
+        null job_family_description,
+        null rollupbranchname,
+        null branchsubregion2,
         null human_entered_checkcall_flag,
         null tracking_identifier_clean,
         null tracking_identifier_type,
@@ -268,7 +302,7 @@ select
     load_num,
     stop_type,
     convert_timezone('America/Chicago',apptopendatetime_cst) apptopendatetime_cst,
-    scheddatetime
+    convert_timezone('America/Chicago',scheddatetime) scheddatetime
 from nast_operations_domain.broker.appointment_universe
 where stop_type = 'P' and activity in ('APPOINTMENTS SET','RESCHEDULES SET','APPOINTMENT INFO UPDATE','APPOINTMENT REMOVAL')
 order by scheddatetime asc
