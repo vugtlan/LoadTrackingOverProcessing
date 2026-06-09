@@ -75,7 +75,7 @@ select
     cust.ear2name,
     a.check_call_type,
     b.description,
-    convert_timezone('America/Chicago',a.entered_datetime_tz)::string entered_datetime_cst,
+    convert_timezone('America/Chicago',a.entered_datetime_tz)::TIMESTAMP_NTZ::string entered_datetime_cst,
     a.city,
     a.state,
     a.country,
@@ -116,7 +116,7 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
         null ear2name,
         concat(stop_type,'-Open') check_call_type,
         warehousecode description,
-        convert_timezone('America/Chicago',apptopendatetime_cst) entered_datetime_cst,
+        convert_timezone('America/Chicago',apptopendatetime_cst)::TIMESTAMP_NTZ::string entered_datetime_cst,
         location.city city,
         location.state state,
         location.country country,
@@ -154,7 +154,7 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
         null ear2name,
         concat(stop_type,'-Close') check_call_type,
         warehousecode description,
-        convert_timezone('America/Chicago',apptclosedatetime_cst) entered_datetime_cst,
+        convert_timezone('America/Chicago',apptclosedatetime_cst)::TIMESTAMP_NTZ::string entered_datetime_cst,
         location.city city,
         location.state state,
         location.country country,
@@ -193,7 +193,7 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
         null ear2name,
         concat(stop_type,'-Open') check_call_type,
         warehousecode description,
-        convert_timezone('America/Chicago',apptopendatetime_cst) entered_datetime_cst,
+        convert_timezone('America/Chicago',apptopendatetime_cst)::TIMESTAMP_NTZ::string entered_datetime_cst,
         location.city city,
         location.state state,
         location.country country,
@@ -232,7 +232,7 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
         null ear2name,
         concat(stop_type,'-Close') check_call_type,
         warehousecode description,
-        convert_timezone('America/Chicago',apptclosedatetime_cst) entered_datetime_cst,
+        convert_timezone('America/Chicago',apptclosedatetime_cst)::TIMESTAMP_NTZ::string entered_datetime_cst,
         location.city city,
         location.state state,
         location.country country,
@@ -319,8 +319,8 @@ group by 1
 ,final as 
 (
 select a.*,
-case when fpo.load_num is not null then po.scheddatetime else null end og_scheddatetime,
-case when fpo.load_num is not null then po.apptopendatetime_cst else null end og_apptopen, cl.is_cross_border_related, b.TRACKING_SLA_PRE_PICK, 
+case when fpo.load_num is not null then po.scheddatetime::TIMESTAMP_NTZ::string else null end og_scheddatetime,
+case when fpo.load_num is not null then po.apptopendatetime_cst::TIMESTAMP_NTZ::string else null end og_apptopen, cl.is_cross_border_related, b.TRACKING_SLA_PRE_PICK, 
 b.TRACKING_SLA_IN_TRANSIT, b.TRACKING_SLA_TOTAL, b.TRACKING_SLA_TOTAL_SCORE_ACTUAL, b.TRACKING_SLA_TOTAL_SCORE_POSSIBLE
 from data_final a
 left join sla_performance b on a.load_num = b.load_num
