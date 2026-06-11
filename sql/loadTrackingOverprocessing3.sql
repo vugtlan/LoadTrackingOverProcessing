@@ -102,7 +102,7 @@ inner join loads_filter lf on lf.load_num = a.load_num
 left join cdc_orion.broker.ep_activity act on act.loadnumber = a.load_num
 left join nast_operations_domain.broker.order_characteristics oc on oc.ordernum = act.ordernumber
 left join nast_truckload_domain.broker.dim_customer cust on cust.customercode = oc.customer_code
-where to_date(entered_datetime_tz) >= TO_DATE({startdate}) and to_date(entered_datetime_tz) <= TO_DATE({enddate})
+where /*check_call_type = 'CC' and*/ to_date(entered_datetime_tz) >= TO_DATE({startdate}) and to_date(entered_datetime_tz) <= TO_DATE({enddate})
 qualify row_number() over (partition by a.load_num, a.check_call_type, b.description, entered_datetime_cst order by tm.version_start_datetime_tz desc) = 1
 )
 
@@ -116,7 +116,7 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
         null ear2name,
         concat(stop_type,'-Open') check_call_type,
         warehousecode description,
-        convert_timezone('America/Chicago',apptopendatetime_cst)::TIMESTAMP_NTZ::string entered_datetime_cst,
+        /*convert_timezone('America/Chicago',*/apptopendatetime_cst/*)::TIMESTAMP_NTZ*/::string entered_datetime_cst,
         location.city city,
         location.state state,
         location.country country,
@@ -138,7 +138,8 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
     inner join nast_carrier_domain.broker.load_books lb on lb.load_num = appt.loadnum
     inner join loads_filter lf on lf.load_num = appt.loadnum
     -- Getting only appointments that are in the US
-    inner join enterprise_reference_domain.broker.ref_location location on location.location_party_code = appt.warehousecode and location.country = 'United States'       where /*to_date(lb.booked_datetime) <= to_date(appt.apptopendatetime_cst) and*/ appt.activity in ('APPOINTMENTS SET','RESCHEDULES SET','APPOINTMENT INFO UPDATE','APPOINTMENT REMOVAL') and stop_type = 'P'
+    inner join enterprise_reference_domain.broker.ref_location location on location.location_party_code = appt.warehousecode and location.country = 'United States'       
+    where /*to_date(lb.booked_datetime) <= to_date(appt.apptopendatetime_cst) and*/ appt.activity in ('APPOINTMENTS SET','RESCHEDULES SET','APPOINTMENT INFO UPDATE','APPOINTMENT REMOVAL') and stop_type = 'P'
     qualify ROW_NUMBER() OVER (
             PARTITION BY appt.loadnum, appt.stop_num, appt.stop_type
             ORDER BY appt.scheddatetime DESC
@@ -154,7 +155,7 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
         null ear2name,
         concat(stop_type,'-Close') check_call_type,
         warehousecode description,
-        convert_timezone('America/Chicago',apptclosedatetime_cst)::TIMESTAMP_NTZ::string entered_datetime_cst,
+        /*convert_timezone('America/Chicago',*/apptclosedatetime_cst/*)::TIMESTAMP_NTZ*/::string entered_datetime_cst,
         location.city city,
         location.state state,
         location.country country,
@@ -177,7 +178,7 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
     inner join loads_filter lf on lf.load_num = appt.loadnum
     -- Getting only appointments that are in the US
     inner join enterprise_reference_domain.broker.ref_location location on location.location_party_code = appt.warehousecode and location.country = 'United States' 
-    where appt.activity in ('APPOINTMENTS SET','RESCHEDULES SET','APPOINTMENT INFO UPDATE','APPOINTMENT REMOVAL') and stop_type = 'P'
+    where /*to_date(lb.booked_datetime) <= to_date(appt.apptopendatetime_cst) and*/ appt.activity in ('APPOINTMENTS SET','RESCHEDULES SET','APPOINTMENT INFO UPDATE','APPOINTMENT REMOVAL') and stop_type = 'P'
     qualify ROW_NUMBER() OVER (
             PARTITION BY appt.loadnum, appt.stop_num, appt.stop_type
             ORDER BY appt.scheddatetime DESC
@@ -193,7 +194,7 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
         null ear2name,
         concat(stop_type,'-Open') check_call_type,
         warehousecode description,
-        convert_timezone('America/Chicago',apptopendatetime_cst)::TIMESTAMP_NTZ::string entered_datetime_cst,
+        /*convert_timezone('America/Chicago',*/apptopendatetime_cst/*)::TIMESTAMP_NTZ*/::string entered_datetime_cst,
         location.city city,
         location.state state,
         location.country country,
@@ -216,7 +217,7 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
     inner join loads_filter lf on lf.load_num = appt.loadnum
     -- Getting only appointments that are in the US
     inner join enterprise_reference_domain.broker.ref_location location on location.location_party_code = appt.warehousecode and location.country = 'United States' 
-    where appt.activity in ('APPOINTMENTS SET','RESCHEDULES SET','APPOINTMENT INFO UPDATE','APPOINTMENT REMOVAL') and stop_type = 'D'
+    where /*to_date(lb.booked_datetime) <= to_date(appt.apptopendatetime_cst) and*/ appt.activity in ('APPOINTMENTS SET','RESCHEDULES SET','APPOINTMENT INFO UPDATE','APPOINTMENT REMOVAL') and stop_type = 'D'
     qualify ROW_NUMBER() OVER (
             PARTITION BY appt.loadnum, appt.stop_num, appt.stop_type
             ORDER BY appt.scheddatetime DESC
@@ -232,7 +233,7 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
         null ear2name,
         concat(stop_type,'-Close') check_call_type,
         warehousecode description,
-        convert_timezone('America/Chicago',apptclosedatetime_cst)::TIMESTAMP_NTZ::string entered_datetime_cst,
+        /*convert_timezone('America/Chicago',*/apptclosedatetime_cst/*)::TIMESTAMP_NTZ*/::string entered_datetime_cst,
         location.city city,
         location.state state,
         location.country country,
@@ -255,12 +256,13 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
     inner join loads_filter lf on lf.load_num = appt.loadnum
     -- Getting only appointments that are in the US
     inner join enterprise_reference_domain.broker.ref_location location on location.location_party_code = appt.warehousecode and location.country = 'United States' 
-    where appt.activity in ('APPOINTMENTS SET','RESCHEDULES SET','APPOINTMENT INFO UPDATE','APPOINTMENT REMOVAL') and stop_type = 'D'
+    where /*to_date(lb.booked_datetime) <= to_date(appt.apptopendatetime_cst) and*/ appt.activity in ('APPOINTMENTS SET','RESCHEDULES SET','APPOINTMENT INFO UPDATE','APPOINTMENT REMOVAL') and stop_type = 'D'
     qualify ROW_NUMBER() OVER (
             PARTITION BY appt.loadnum, appt.stop_num, appt.stop_type
             ORDER BY appt.scheddatetime DESC
         ) = 1
 )
+
 
 ,data_final as
 (
@@ -293,7 +295,7 @@ from latest_sched_dropoff_close
 (
 select distinct load_num
 from data_final
-where country = 'United States'
+where /*(check_call_type = 'P-Open' and country = 'United States') and (check_call_type = 'D-Open' and country = 'United States')*/ country = 'United States'
 )
 
 ,pick_opens as 
@@ -301,39 +303,50 @@ where country = 'United States'
 select
     load_num,
     stop_type,
-    convert_timezone('America/Chicago',apptopendatetime_cst) apptopendatetime_cst,
-    convert_timezone('America/Chicago',scheddatetime) scheddatetime
+    apptopendatetime_cst apptopendatetime_cst,
+    scheddatetime scheddatetime
 from nast_operations_domain.broker.appointment_universe
 where stop_type = 'P' and activity in ('APPOINTMENTS SET','RESCHEDULES SET','APPOINTMENT INFO UPDATE','APPOINTMENT REMOVAL')
 order by scheddatetime asc
 )
 
+-- ,first_p_open as
+-- (
+-- select load_num, min(entered_datetime_cst) first_p_open_date
+-- from data_final
+-- where check_call_type = 'P-Open'
+-- group by 1
+-- )
+
 ,first_p_open as
 (
-select load_num, min(entered_datetime_cst) first_p_open_date
-from data_final
-where check_call_type = 'P-Open'
-group by 1
+select load_num,
+       warehousecode,
+       apptopendatetime_cst,
+       apptclosedatetime_cst,
+       scheddatetime
+from nast_operations_domain.broker.appointment_universe a
+where stop_type = 'P' and stop_num = 0 and activity in ('APPOINTMENTS SET','RESCHEDULES SET','APPOINTMENT INFO UPDATE','APPOINTMENT REMOVAL')
 )
 
 ,final as 
 (
 select a.*,
-case when fpo.load_num is not null then po.scheddatetime::TIMESTAMP_NTZ::string else null end og_scheddatetime,
-case when fpo.load_num is not null then po.apptopendatetime_cst::TIMESTAMP_NTZ::string else null end og_apptopen, cl.is_cross_border_related, b.TRACKING_SLA_PRE_PICK, 
-b.TRACKING_SLA_IN_TRANSIT, b.TRACKING_SLA_TOTAL, b.TRACKING_SLA_TOTAL_SCORE_ACTUAL, b.TRACKING_SLA_TOTAL_SCORE_POSSIBLE
+case when fpo.load_num is not null then po.scheddatetime/*::TIMESTAMP_NTZ::string*/ else null end og_scheddatetime,
+case when fpo.load_num is not null then po.apptopendatetime_cst/*::TIMESTAMP_NTZ::string*/ else null end og_apptopen
 from data_final a
 left join sla_performance b on a.load_num = b.load_num
 left join nast_carrier_domain.broker.loads cl on cl.load_num = a.load_num
 -- Filtering to just US loads
 inner join us_loads on us_loads.load_num = a.load_num
-left join pick_opens po on po.load_num = a.load_num and convert_timezone('America/Chicago',po.scheddatetime) <= entered_datetime_cst -- and po.apptopendatetime_cst >= entered_datetime_cst
-left join first_p_open fpo on fpo.load_num = a.load_num and a.entered_datetime_cst <= fpo.first_p_open_date
+left join pick_opens po on po.load_num = a.load_num and po.scheddatetime <= entered_datetime_cst
+left join first_p_open fpo on fpo.load_num = a.load_num and fpo.scheddatetime <= a.entered_datetime_cst
 qualify row_number() over (
     partition by a.load_num, a.check_call_type, a.description, a.entered_datetime_cst, a.update_user 
     order by og_scheddatetime DESC
     ) = 1
 order by a.entered_datetime_cst asc
 )
+
 
 select * from final
