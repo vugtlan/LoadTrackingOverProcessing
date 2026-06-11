@@ -138,7 +138,8 @@ qualify row_number() over (partition by a.load_num, a.check_call_type, b.descrip
     inner join nast_carrier_domain.broker.load_books lb on lb.load_num = appt.loadnum
     inner join loads_filter lf on lf.load_num = appt.loadnum
     -- Getting only appointments that are in the US
-    inner join enterprise_reference_domain.broker.ref_location location on location.location_party_code = appt.warehousecode and location.country = 'United States'       where /*to_date(lb.booked_datetime) <= to_date(appt.apptopendatetime_cst) and*/ appt.activity in ('APPOINTMENTS SET','RESCHEDULES SET','APPOINTMENT INFO UPDATE','APPOINTMENT REMOVAL') and stop_type = 'P'
+    inner join enterprise_reference_domain.broker.ref_location location on location.location_party_code = appt.warehousecode and location.country = 'United States'       
+    where /*to_date(lb.booked_datetime) <= to_date(appt.apptopendatetime_cst) and*/ appt.activity in ('APPOINTMENTS SET','RESCHEDULES SET','APPOINTMENT INFO UPDATE','APPOINTMENT REMOVAL') and stop_type = 'P'
     qualify ROW_NUMBER() OVER (
             PARTITION BY appt.loadnum, appt.stop_num, appt.stop_type
             ORDER BY appt.scheddatetime DESC
